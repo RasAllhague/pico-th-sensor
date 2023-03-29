@@ -1,46 +1,33 @@
 #![no_std]
 #![no_main]
 
-// For string formatting.
+mod display;
+mod io_pin;
+
 use core::fmt::Write;
-
-// The macro for our start-up function
-use rp_pico::entry;
-
-// Time handling traits:
-use fugit::{ExtU32, RateExtU32};
-
-// CountDown timer for the counter on the display:
-use embedded_hal::timer::CountDown;
-
-// Ensure we halt the program on panic (if we don't mention this crate it won't
-// be linked)
-use panic_halt as _;
-
-// A shorter alias for the Peripheral Access Crate, which provides low-level
-// register access
-use rp_pico::hal::pac;
-
-// A shorter alias for the Hardware Abstraction Layer, which provides
-// higher-level drivers.
-use rp_pico::hal;
-
-// For in the graphics drawing utilities like the font
-// and the drawing routines:
+use dht_sensor::{dht22, DhtError, DhtReading};
+use display::FmtBuf;
 use embedded_graphics::{
     mono_font::{ascii::FONT_9X18_BOLD, MonoTextStyleBuilder},
     pixelcolor::BinaryColor,
     prelude::*,
     text::{Baseline, Text},
 };
-
-// The display driver:
+use embedded_hal::digital::v2::OutputPin;
+use fugit::RateExtU32;
+use hal::Clock;
+use io_pin::InOutPin;
+use panic_halt as _;
+use rp_pico::entry;
+use rp_pico::hal;
+use rp_pico::hal::pac;
 use ssd1306::{prelude::*, Ssd1306};
 
 #[entry]
 fn main() -> ! {
     // Grab our singleton objects
     let mut pac = pac::Peripherals::take().unwrap();
+    let core = pac::CorePeripherals::take().unwrap();
 
     // Set up the watchdog driver - needed by the clock setup code
     let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
@@ -101,29 +88,48 @@ fn main() -> ! {
         .text_color(BinaryColor::On)
         .build();
 
-    let timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS);
-    let mut delay = timer.count_down();
-
-    let mut count = 0;
+    let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
+    let mut pin = InOutPin::new(pins.gpio15.into());
+    pin.set_high().ok();
 
     let mut buf = FmtBuf::new();
+
+    delay.delay_ms(1000);
+
     loop {
         buf.reset();
-        // Format some text into a static buffer:
-        write!(&mut buf, "counter: {}", count).unwrap();
-        count += 1;
 
-        // Empty the display:
+        let measurement = match dht22::Reading::read(&mut delay, &mut pin) {
+            Ok(m) => (0, m.relative_humidity, m.temperature),
+            Err(why) => {
+                let error = match why {
+                    DhtError::PinError(_) => 1,
+                    DhtError::ChecksumMismatch => 2,
+                    DhtError::Timeout => 3,
+                };
+
+                (error, 0.0, 0.0)
+            }
+        };
+
         display.clear();
 
-        // Draw 3 lines of text:
-        Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
+        write!(&mut buf, "Info: {}", measurement.0).unwrap();
+
+        Text::with_baseline(buf.as_str(), Point::new(0, 0), text_style, Baseline::Top)
             .draw(&mut display)
             .unwrap();
 
-        Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
+        buf.reset();
+        // Format some text into a static buffer:
+        write!(&mut buf, "Temp: {}", measurement.2).unwrap();
+
+        Text::with_baseline(buf.as_str(), Point::new(0, 16), text_style, Baseline::Top)
             .draw(&mut display)
             .unwrap();
+
+        buf.reset();
+        write!(&mut buf, "Humid: {}", measurement.1).unwrap();
 
         Text::with_baseline(buf.as_str(), Point::new(0, 32), text_style, Baseline::Top)
             .draw(&mut display)
@@ -131,46 +137,6 @@ fn main() -> ! {
 
         display.flush().unwrap();
 
-        // Wait a bit:
-        delay.start(500.millis());
-        let _ = nb::block!(delay.wait());
-    }
-}
-
-/// This is a very simple buffer to pre format a short line of text
-/// limited arbitrarily to 64 bytes.
-struct FmtBuf {
-    buf: [u8; 64],
-    ptr: usize,
-}
-
-impl FmtBuf {
-    fn new() -> Self {
-        Self {
-            buf: [0; 64],
-            ptr: 0,
-        }
-    }
-
-    fn reset(&mut self) {
-        self.ptr = 0;
-    }
-
-    fn as_str(&self) -> &str {
-        core::str::from_utf8(&self.buf[0..self.ptr]).unwrap()
-    }
-}
-
-impl core::fmt::Write for FmtBuf {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        let rest_len = self.buf.len() - self.ptr;
-        let len = if rest_len < s.len() {
-            rest_len
-        } else {
-            s.len()
-        };
-        self.buf[self.ptr..(self.ptr + len)].copy_from_slice(&s.as_bytes()[0..len]);
-        self.ptr += len;
-        Ok(())
+        delay.delay_ms(1000);
     }
 }
