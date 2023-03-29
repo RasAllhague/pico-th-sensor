@@ -18,15 +18,8 @@ use hal::Clock;
 use panic_halt as _;
 use rp_pico::hal;
 use rp_pico::hal::pac;
-use rp_pico::{
-    entry,
-    hal::gpio::{
-        bank0::{Gpio16, Gpio17},
-        Function, Pin,
-    },
-    pac::I2C0,
-};
-use ssd1306::{mode::BufferedGraphicsMode, prelude::*, Ssd1306};
+use rp_pico::entry;
+use ssd1306::{prelude::*, Ssd1306};
 
 #[entry]
 fn main() -> ! {
