@@ -6,7 +6,7 @@ use display_interface::DisplayError;
 pub enum Error {
     Dht(DhtError<Infallible>),
     Display(DisplayError),
-    Fmt(core::fmt::Error)
+    Fmt(core::fmt::Error),
 }
 
 impl Error {

@@ -6,17 +6,29 @@ use ssd1306::{
     mode::BufferedGraphicsMode, prelude::WriteOnlyDataCommand, size::DisplaySize, Ssd1306,
 };
 
-use crate::{display::FmtBuf, write_formatted_line, errors::Error, rgb_led::RgbLed};
+use crate::{display::FmtBuf, errors::Error, rgb_led::RgbLed, write_formatted_line};
 
-pub struct WlanTempSensorBoard<DHT: PinId, DI: WriteOnlyDataCommand, SIZE: DisplaySize, RED: PinId, GREEN: PinId, BLUE: PinId>
-{
+pub struct WlanTempSensorBoard<
+    DHT: PinId,
+    DI: WriteOnlyDataCommand,
+    SIZE: DisplaySize,
+    RED: PinId,
+    GREEN: PinId,
+    BLUE: PinId,
+> {
     dht_data_pin: Pin<DHT, Output<Readable>>,
     display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
     rgb_led: RgbLed<RED, GREEN, BLUE>,
 }
 
-impl<DHT: PinId, DI: WriteOnlyDataCommand, SIZE: DisplaySize, RED: PinId, GREEN: PinId, BLUE: PinId>
-    WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>
+impl<
+        DHT: PinId,
+        DI: WriteOnlyDataCommand,
+        SIZE: DisplaySize,
+        RED: PinId,
+        GREEN: PinId,
+        BLUE: PinId,
+    > WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>
 {
     pub fn new(
         dht_data_pin: Pin<DHT, Output<Readable>>,
@@ -26,11 +38,16 @@ impl<DHT: PinId, DI: WriteOnlyDataCommand, SIZE: DisplaySize, RED: PinId, GREEN:
         WlanTempSensorBoard {
             dht_data_pin,
             display,
-            rgb_led
+            rgb_led,
         }
     }
 
-    pub fn display_measurement(&mut self, buf: &mut FmtBuf, delay: &mut cortex_m::delay::Delay, text_style: MonoTextStyle<BinaryColor>) -> Result<(), Error> {
+    pub fn display_measurement(
+        &mut self,
+        buf: &mut FmtBuf,
+        delay: &mut cortex_m::delay::Delay,
+        text_style: MonoTextStyle<BinaryColor>,
+    ) -> Result<(), Error> {
         buf.reset();
         self.display.clear();
 

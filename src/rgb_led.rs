@@ -12,6 +12,6 @@ impl<RED: PinId, GREEN: PinId, BLUE: PinId> RgbLed<RED, GREEN, BLUE> {
         green: Pin<GREEN, Output<PushPull>>,
         blue: Pin<BLUE, Output<PushPull>>,
     ) -> RgbLed<RED, GREEN, BLUE> {
-        RgbLed { red, green, blue, }
+        RgbLed { red, green, blue }
     }
 }

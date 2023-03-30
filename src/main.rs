@@ -25,12 +25,7 @@ use panic_halt as _;
 use rgb_led::RgbLed;
 use rp_pico::hal;
 use rp_pico::hal::pac;
-use rp_pico::{
-    entry,
-    hal::gpio::{
-        PinId,
-    },
-};
+use rp_pico::{entry, hal::gpio::PinId};
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*, Ssd1306};
 
