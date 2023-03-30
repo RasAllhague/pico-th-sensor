@@ -30,12 +30,12 @@ impl<
         BLUE: PinId,
     > WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>
 {
-    pub fn new(
+    pub const fn new(
         dht_data_pin: Pin<DHT, Output<Readable>>,
         display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
         rgb_led: RgbLed<RED, GREEN, BLUE>,
-    ) -> WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE> {
-        WlanTempSensorBoard {
+    ) -> Self {
+        Self {
             dht_data_pin,
             display,
             rgb_led,
@@ -75,7 +75,7 @@ impl<
         Ok(())
     }
 
-    pub fn blink_error_led(&mut self, error: Error, delay: &mut cortex_m::delay::Delay) {
+    pub fn blink_error_led(&mut self, error: &Error, delay: &mut cortex_m::delay::Delay) {
         let interval = error.error_interval();
 
         match error {

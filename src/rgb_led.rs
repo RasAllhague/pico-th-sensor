@@ -7,11 +7,11 @@ pub struct RgbLed<RED: PinId, GREEN: PinId, BLUE: PinId> {
 }
 
 impl<RED: PinId, GREEN: PinId, BLUE: PinId> RgbLed<RED, GREEN, BLUE> {
-    pub fn new(
+    pub const fn new(
         red: Pin<RED, Output<PushPull>>,
         green: Pin<GREEN, Output<PushPull>>,
         blue: Pin<BLUE, Output<PushPull>>,
-    ) -> RgbLed<RED, GREEN, BLUE> {
-        RgbLed { red, green, blue }
+    ) -> Self {
+        Self { red, green, blue }
     }
 }

@@ -112,7 +112,7 @@ where
 {
     loop {
         if let Err(err) = board.display_measurement(&mut buf, &mut delay, text_style) {
-            board.blink_error_led(err, &mut delay)
+            board.blink_error_led(&err, &mut delay);
         } else {
             delay.delay_ms(1000);
         }

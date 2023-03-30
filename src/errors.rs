@@ -10,29 +10,29 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn error_interval(&self) -> u32 {
+    pub const fn error_interval(&self) -> u32 {
         match self {
-            Error::Dht(_) => 500,
-            Error::Display(_) => 1000,
-            Error::Fmt(_) => 1500,
+            Self::Dht(_) => 500,
+            Self::Display(_) => 1000,
+            Self::Fmt(_) => 1500,
         }
     }
 }
 
 impl From<DhtError<Infallible>> for Error {
     fn from(value: DhtError<Infallible>) -> Self {
-        Error::Dht(value)
+        Self::Dht(value)
     }
 }
 
 impl From<DisplayError> for Error {
     fn from(value: DisplayError) -> Self {
-        Error::Display(value)
+        Self::Display(value)
     }
 }
 
 impl From<core::fmt::Error> for Error {
     fn from(value: core::fmt::Error) -> Self {
-        Error::Fmt(value)
+        Self::Fmt(value)
     }
 }
