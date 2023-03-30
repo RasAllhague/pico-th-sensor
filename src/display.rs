@@ -6,7 +6,7 @@ pub struct FmtBuf {
 }
 
 impl FmtBuf {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             buf: [0; 64],
             ptr: 0,

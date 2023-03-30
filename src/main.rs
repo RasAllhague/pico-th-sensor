@@ -1,9 +1,11 @@
+#![deny(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
 #![no_std]
 #![no_main]
 
 mod display;
 
-use core::fmt::Debug;
 use core::fmt::{Display, Write};
 use dht_sensor::{dht22, DhtError, DhtReading};
 use display::FmtBuf;
@@ -16,9 +18,12 @@ use embedded_graphics::{
 use fugit::RateExtU32;
 use hal::Clock;
 use panic_halt as _;
-use rp_pico::hal;
-use rp_pico::hal::pac;
 use rp_pico::entry;
+use rp_pico::hal;
+use rp_pico::hal::gpio::bank0::Gpio15;
+use rp_pico::hal::gpio::{Output, Pin, Readable};
+use rp_pico::hal::pac;
+use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*, Ssd1306};
 
 #[entry]
@@ -73,14 +78,28 @@ fn main() -> ! {
         .build();
 
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
-    let mut dht22_data_pin = pins
+    let dht22_data_pin = pins
         .gpio15
         .into_readable_output_in_state(hal::gpio::PinState::High);
 
-    let mut buf = FmtBuf::new();
+    let buf = FmtBuf::new();
 
     delay.delay_ms(1000);
 
+    run(buf, display, delay, text_style, dht22_data_pin);
+}
+
+fn run<DI, SIZE>(
+    mut buf: FmtBuf,
+    mut display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
+    mut delay: cortex_m::delay::Delay,
+    text_style: MonoTextStyle<BinaryColor>,
+    mut dht22_data_pin: Pin<Gpio15, Output<Readable>>,
+) -> !
+where
+    DI: WriteOnlyDataCommand,
+    SIZE: DisplaySize,
+{
     loop {
         buf.reset();
         display.clear();
@@ -120,20 +139,20 @@ fn main() -> ! {
     }
 }
 
-pub fn write_formatted_line<T: Display, D>(
+fn write_formatted_line<T: Display, DI, SIZE>(
     mut buf: &mut FmtBuf,
     text: &str,
     value: T,
     line: u8,
     text_style: MonoTextStyle<BinaryColor>,
-    display: &mut D,
+    display: &mut Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
 ) where
-    D: DrawTarget<Color = BinaryColor>,
-    <D as embedded_graphics::draw_target::DrawTarget>::Error: Debug,
+    DI: WriteOnlyDataCommand,
+    SIZE: DisplaySize,
 {
-    write!(&mut buf, "{}: {}", text, value).unwrap();
+    write!(&mut buf, "{text}: {value}").unwrap();
 
-    let line = line as i32 * 16;
+    let line = i32::from(line) * 16;
 
     Text::with_baseline(buf.as_str(), Point::new(0, line), text_style, Baseline::Top)
         .draw(display)
