@@ -343,6 +343,7 @@ dependencies = [
  "defmt",
  "defmt-rtt",
  "dht-sensor",
+ "display-interface",
  "embedded-graphics",
  "embedded-hal",
  "fugit",

@@ -4,10 +4,13 @@
 #![no_std]
 #![no_main]
 
+mod board;
 mod display;
+mod errors;
+mod rgb_led;
 
+use board::WlanTempSensorBoard;
 use core::fmt::{Display, Write};
-use dht_sensor::{dht22, DhtError, DhtReading};
 use display::FmtBuf;
 use embedded_graphics::{
     mono_font::{ascii::FONT_9X18_BOLD, MonoTextStyle, MonoTextStyleBuilder},
@@ -15,14 +18,19 @@ use embedded_graphics::{
     prelude::*,
     text::{Baseline, Text},
 };
+use errors::Error;
 use fugit::RateExtU32;
 use hal::Clock;
 use panic_halt as _;
-use rp_pico::entry;
+use rgb_led::RgbLed;
 use rp_pico::hal;
-use rp_pico::hal::gpio::bank0::Gpio15;
-use rp_pico::hal::gpio::{Output, Pin, Readable};
 use rp_pico::hal::pac;
+use rp_pico::{
+    entry,
+    hal::gpio::{
+        PinId,
+    },
+};
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*, Ssd1306};
 
@@ -82,60 +90,37 @@ fn main() -> ! {
         .gpio15
         .into_readable_output_in_state(hal::gpio::PinState::High);
 
-    let buf = FmtBuf::new();
+    let red_pin = pins.gpio10.into_push_pull_output();
+    let green_pin = pins.gpio11.into_push_pull_output();
+    let blue_pin = pins.gpio12.into_push_pull_output();
+
+    let rgb_led = RgbLed::new(red_pin, green_pin, blue_pin);
 
     delay.delay_ms(1000);
 
-    run(buf, display, delay, text_style, dht22_data_pin);
+    let buf = FmtBuf::new();
+
+    let board = WlanTempSensorBoard::new(dht22_data_pin, display, rgb_led);
+
+    run(buf, delay, text_style, board);
 }
 
-fn run<DI, SIZE>(
+fn run<DHT: PinId, DI, SIZE, RED: PinId, GREEN: PinId, BLUE: PinId>(
     mut buf: FmtBuf,
-    mut display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
     mut delay: cortex_m::delay::Delay,
     text_style: MonoTextStyle<BinaryColor>,
-    mut dht22_data_pin: Pin<Gpio15, Output<Readable>>,
+    mut board: WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>,
 ) -> !
 where
     DI: WriteOnlyDataCommand,
     SIZE: DisplaySize,
 {
     loop {
-        buf.reset();
-        display.clear();
-
-        match dht22::Reading::read(&mut delay, &mut dht22_data_pin) {
-            Ok(reading) => {
-                write_formatted_line(
-                    &mut buf,
-                    "Temp",
-                    reading.temperature,
-                    0,
-                    text_style,
-                    &mut display,
-                );
-                write_formatted_line(
-                    &mut buf,
-                    "Humid",
-                    reading.relative_humidity,
-                    1,
-                    text_style,
-                    &mut display,
-                );
-            }
-            Err(why) => {
-                let error = match why {
-                    DhtError::PinError(_) => 1,
-                    DhtError::ChecksumMismatch => 2,
-                    DhtError::Timeout => 3,
-                };
-
-                write_formatted_line(&mut buf, "Errorcode:", error, 0, text_style, &mut display);
-            }
-        };
-
-        display.flush().unwrap();
-        delay.delay_ms(1000);
+        if let Err(err) = board.display_measurement(&mut buf, &mut delay, text_style) {
+            board.blink_error_led(err, &mut delay)
+        } else {
+            delay.delay_ms(1000);
+        }
     }
 }
 
@@ -146,17 +131,19 @@ fn write_formatted_line<T: Display, DI, SIZE>(
     line: u8,
     text_style: MonoTextStyle<BinaryColor>,
     display: &mut Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
-) where
+) -> Result<(), Error>
+where
     DI: WriteOnlyDataCommand,
     SIZE: DisplaySize,
 {
-    write!(&mut buf, "{text}: {value}").unwrap();
+    write!(&mut buf, "{text}: {value}")?;
 
     let line = i32::from(line) * 16;
 
     Text::with_baseline(buf.as_str(), Point::new(0, line), text_style, Baseline::Top)
-        .draw(display)
-        .unwrap();
+        .draw(display)?;
 
     buf.reset();
+
+    Ok(())
 }

@@ -12,6 +12,7 @@ embedded-hal = { version = "0.2.5", features = ["unproven"] }
 fugit = "0.3.5"
 ssd1306 = "0.7.0"
 embedded-graphics = "0.7.1"
+display-interface = "0.4.1"
 panic-halt= "0.2.0"
 nb = "1.0"
 rand = { version = "0.8.3", features = ["small_rng"], default-features = false }
