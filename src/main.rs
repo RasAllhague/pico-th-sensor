@@ -10,7 +10,6 @@ mod errors;
 mod rgb_led;
 
 use board::WlanTempSensorBoard;
-use embedded_hal::digital::v2::{OutputPin, InputPin};
 use core::fmt::{Display, Write};
 use display::FmtBuf;
 use embedded_graphics::{
