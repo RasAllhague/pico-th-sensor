@@ -1,7 +1,7 @@
 use dht_sensor::{dht22, DhtReading};
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::BinaryColor};
 use embedded_hal::digital::v2::OutputPin;
-use rp_pico::hal::gpio::{Output, Pin, PinId, Readable};
+use rp_pico::hal::gpio::{Output, Pin, PinId, Readable, Input, PullDown};
 use ssd1306::{
     mode::BufferedGraphicsMode, prelude::WriteOnlyDataCommand, size::DisplaySize, Ssd1306,
 };
@@ -15,10 +15,14 @@ pub struct WlanTempSensorBoard<
     RED: PinId,
     GREEN: PinId,
     BLUE: PinId,
+    BTN1: PinId,
+    BTN2: PinId,
 > {
     dht_data_pin: Pin<DHT, Output<Readable>>,
     display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
-    rgb_led: RgbLed<RED, GREEN, BLUE>,
+    pub rgb_led: RgbLed<RED, GREEN, BLUE>,
+    pub wlan_btn: Pin<BTN1, Input<PullDown>>,
+    pub power_btn: Pin<BTN2, Input<PullDown>>,
 }
 
 impl<
@@ -28,17 +32,23 @@ impl<
         RED: PinId,
         GREEN: PinId,
         BLUE: PinId,
-    > WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>
+        BTN1: PinId,
+        BTN2: PinId,
+    > WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE, BTN1, BTN2>
 {
     pub const fn new(
         dht_data_pin: Pin<DHT, Output<Readable>>,
         display: Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>,
         rgb_led: RgbLed<RED, GREEN, BLUE>,
+        wlan_btn: Pin<BTN1, Input<PullDown>>,
+        power_btn: Pin<BTN2, Input<PullDown>>,
     ) -> Self {
         Self {
             dht_data_pin,
             display,
             rgb_led,
+            wlan_btn,
+            power_btn,
         }
     }
 

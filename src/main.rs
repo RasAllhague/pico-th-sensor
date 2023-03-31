@@ -10,6 +10,7 @@ mod errors;
 mod rgb_led;
 
 use board::WlanTempSensorBoard;
+use embedded_hal::digital::v2::{OutputPin, InputPin};
 use core::fmt::{Display, Write};
 use display::FmtBuf;
 use embedded_graphics::{
@@ -85,26 +86,29 @@ fn main() -> ! {
         .gpio15
         .into_readable_output_in_state(hal::gpio::PinState::High);
 
-    let red_pin = pins.gpio10.into_push_pull_output();
+    let red_pin = pins.gpio12.into_push_pull_output();
     let green_pin = pins.gpio11.into_push_pull_output();
-    let blue_pin = pins.gpio12.into_push_pull_output();
+    let blue_pin = pins.gpio10.into_push_pull_output();
 
     let rgb_led = RgbLed::new(red_pin, green_pin, blue_pin);
+
+    let wlan_btn_pin = pins.gpio13.into_pull_down_input();
+    let power_btn = pins.gpio14.into_pull_down_input();
 
     delay.delay_ms(1000);
 
     let buf = FmtBuf::new();
 
-    let board = WlanTempSensorBoard::new(dht22_data_pin, display, rgb_led);
+    let board = WlanTempSensorBoard::new(dht22_data_pin, display, rgb_led, wlan_btn_pin, power_btn);
 
     run(buf, delay, text_style, board);
 }
 
-fn run<DHT: PinId, DI, SIZE, RED: PinId, GREEN: PinId, BLUE: PinId>(
+fn run<DHT: PinId, DI, SIZE, RED: PinId, GREEN: PinId, BLUE: PinId, BTN1: PinId, BTN2: PinId>(
     mut buf: FmtBuf,
     mut delay: cortex_m::delay::Delay,
     text_style: MonoTextStyle<BinaryColor>,
-    mut board: WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE>,
+    mut board: WlanTempSensorBoard<DHT, DI, SIZE, RED, GREEN, BLUE, BTN1, BTN2>,
 ) -> !
 where
     DI: WriteOnlyDataCommand,
