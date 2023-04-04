@@ -1,7 +1,7 @@
 use dht_sensor::{dht22, DhtReading};
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::BinaryColor};
 use embedded_hal::digital::v2::OutputPin;
-use rp_pico::hal::gpio::{Output, Pin, PinId, Readable, Input, PullDown};
+use rp_pico::hal::gpio::{Input, Output, Pin, PinId, PullDown, Readable};
 use ssd1306::{
     mode::BufferedGraphicsMode, prelude::WriteOnlyDataCommand, size::DisplaySize, Ssd1306,
 };
