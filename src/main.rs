@@ -29,6 +29,8 @@ use rp_pico::{entry, hal::gpio::PinId};
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*, Ssd1306};
 
+pub const DHT_DELAY_MS: u32 = 2000; 
+
 #[entry]
 fn main() -> ! {
     let mut pac = pac::Peripherals::take().unwrap();
@@ -94,7 +96,7 @@ fn main() -> ! {
     let wlan_btn_pin = pins.gpio13.into_pull_down_input();
     let power_btn = pins.gpio14.into_pull_down_input();
 
-    delay.delay_ms(1000);
+    delay.delay_ms(DHT_DELAY_MS);
 
     let buf = FmtBuf::new();
 
@@ -117,7 +119,7 @@ where
         if let Err(err) = board.display_measurement(&mut buf, &mut delay, text_style) {
             board.blink_error_led(&err, &mut delay);
         } else {
-            delay.delay_ms(1000);
+            delay.delay_ms(DHT_DELAY_MS);
         }
     }
 }
